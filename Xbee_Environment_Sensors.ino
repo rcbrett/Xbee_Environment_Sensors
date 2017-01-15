@@ -32,19 +32,21 @@ void setup() {
   const int supplyVoltage = 5;
 // the loop routine runs over and over again forever:
 void loop() {
-  float degreesC, sensorRH, trueRH;
+  float degreesC, sensorRH, trueRH, TdewPoint, CloudBase;
 
   // read the input on analog pin 0:
-  int sensorValueT = analogRead(A0);
+  int sensorValueT = analogRead(A3);
   int sensorValueH = analogRead(A1);
   // Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 5V):
-  float voltageT = sensorValueT * (supplyVoltage / 1023.0);
-  float voltageH = sensorValueH * (supplyVoltage / 1023.0);
+  float voltageT = sensorValueT * (supplyVoltage / 1024.0);
+  float voltageH = sensorValueH * (supplyVoltage / 1024.0);
   // Calculate temperature
-   degreesC = (voltageT - 0.5) * 100.0;
+   degreesC = ((voltageT - 0.5) * 100.0)-5;
   // Calculate Humidity
    sensorRH = 161.0 * voltageH / supplyVoltage - 25.8;
    trueRH = sensorRH / (1.0546 - (0.0026 * degreesC)); //temperature adjustment
+   TdewPoint = (degreesC) - ((100 - trueRH)/5);
+   CloudBase = ((((degreesC - TdewPoint) / 4.5) * 1000) + 50);
   // print out the value you read:
   XBee.print(voltageT);
   XBee.print(" ");
@@ -55,6 +57,10 @@ void loop() {
   XBee.print(sensorRH);
   XBee.print(" ");
   XBee.print(trueRH);
+  XBee.print(" ");
+  XBee.print(TdewPoint);
+  XBee.print(" ");
+  XBee.print(CloudBase);
   XBee.println(" ");
   delay(2000);
 }
