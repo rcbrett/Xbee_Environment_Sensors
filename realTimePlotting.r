@@ -22,7 +22,7 @@ parsed_data <-  separate(data, all_data,
 parsed_data <- parsed_data[-1,]
 
 # change all columns to numeric
-parsed_data <- map_df(parsed_data, as.numeric)
+parsed_data <- map(parsed_data, as.numeric) %>% as.data.frame()
 
 # add a time column for plotting
 parsed_data$time <- seq_along(parsed_data$voltage_t)

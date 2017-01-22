@@ -24,20 +24,31 @@ Hardware Hookup:
 #include <SoftwareSerial.h>
 SoftwareSerial XBee(2, 3); //RX, TX
 
+const int numReadings = 10; // size of the array
+
+int readings[numReadings];  // the readings from analog input
+int readIndex = 0;          // the index of the current reading
+int total = 0;              // the running total
+int average = 0;            // the average
+
+ // read the input on analog pin 0:
+  int sensorValueT = analogRead(A3);
+  int sensorValueH = analogRead(A1);
+
 // the setup routine runs once when you press reset:
 void setup() {
   // setup both ports at 9600 bits per second:
   Serial.begin(9600);
   XBee.begin(9600);
+
+  
 }
   const int supplyVoltage = 5;
 // the loop routine runs over and over again forever:
 void loop() {
   float degreesC, sensorRH, trueRH, TdewPoint, CloudBase;
 
-  // read the input on analog pin 0:
-  int sensorValueT = analogRead(A3);
-  int sensorValueH = analogRead(A1);
+ 
   // Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 5V):
   float voltageT = sensorValueT * (supplyVoltage / 1024.0);
   float voltageH = sensorValueH * (supplyVoltage / 1024.0);
