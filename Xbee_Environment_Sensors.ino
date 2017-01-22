@@ -1,4 +1,5 @@
 /*
+ Curtis Brett Jan 2017
   ReadAnalogVoltage
   Reads an analog input on pin 0, converts it to voltage, and prints the result to the serial monitor.
   Graphical representation is available using serial plotter (Tools > Serial Plotter menu)
