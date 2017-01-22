@@ -10,7 +10,8 @@ close(f)
 colnames(data) <- "all_data"
 parsed_data <-  separate(data, all_data, 
                          c("voltage_t", 
-                           "temp_c", 
+                           "temp_c",
+                           "temp_smooth",
                            "voltage_h", 
                            "humidity", 
                            "humidiry_rel", 
@@ -31,8 +32,8 @@ parsed_data$time <- seq_along(parsed_data$voltage_t)
 dew_temp_plot <- ggplot(parsed_data, 
                         aes(x = time, y = temp_c, colour = "Temperature (C)")) +
   geom_line() +
-  geom_line(aes(x = time, y = dewpoint, colour = "Dewpoint")) +
-  ylim(10, 21) +
+  geom_line(aes(x = time, y = temp_smooth, colour = "Smoothed Temp")) +
+  ylim(20, 23) +
   ylab("Temperature (C)") +
   xlab("Time(s)")
  

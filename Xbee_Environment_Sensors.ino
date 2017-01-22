@@ -62,7 +62,7 @@ void loop() {
   // subtract the last reading:
   total = total - readings[readIndex];
   // read from the sensor:
-  readings[readIndex] = (((analogRead(A3)* (supplyVoltage / 1024.0)) - 0.5) * 100.0) - 5;
+  readings[readIndex] = ((voltageT - 0.5) * 100.0) - 5;
   // add the reading to the total:
   total = total + readings[readIndex];
   // advance to the next position in the array:
@@ -88,6 +88,7 @@ void loop() {
    TdewPoint = (degreesC) - ((100 - trueRH)/5);
    CloudBase = ((((degreesC - TdewPoint) / 4.5) * 1000) + 50);
   // print out the value you read:
+  Serial.println(readings[readIndex]);
   XBee.print(voltageT);
   XBee.print(" ");
   XBee.print(degreesC);
@@ -104,5 +105,5 @@ void loop() {
   XBee.print(" ");
   XBee.print(CloudBase);
   XBee.println(" ");
-  delay(2000);
+  delay(250);
 }
