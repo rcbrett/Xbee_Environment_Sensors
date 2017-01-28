@@ -4,7 +4,7 @@ library(tidyverse)
 library(grid)
 
 f <- file("/dev/cu.usbserial-DA01HLQC", open="r")
-data <- data.frame(scan(f, n=60, what = "double", allowEscapes = TRUE, sep = "\n"))
+data <- data.frame(scan(f, n=150, what = "double", allowEscapes = TRUE, sep = "\n"))
 close(f)
 
 colnames(data) <- "all_data"
@@ -14,7 +14,8 @@ parsed_data <-  separate(data, all_data,
                            "temp_smooth",
                            "voltage_h", 
                            "humidity", 
-                           "humidiry_rel", 
+                           "humidiry_rel",
+                           "smoothed_humidity",
                            "dewpoint", 
                            "clound_base"), 
                          sep = " ")
@@ -33,7 +34,7 @@ dew_temp_plot <- ggplot(parsed_data,
                         aes(x = time, y = temp_c, colour = "Temperature (C)")) +
   geom_line() +
   geom_line(aes(x = time, y = temp_smooth, colour = "Smoothed Temp")) +
-  ylim(20, 23) +
+  ylim(18, 21) +
   ylab("Temperature (C)") +
   xlab("Time(s)")
  
@@ -43,7 +44,9 @@ dew_temp_plot
 hum_plot <- ggplot(parsed_data, 
                    aes(x = time, y = humidiry_rel, colour = "Relative Humidity")) +
   geom_line() +
-  ylab("Relative Humidity") +
+  geom_line(aes(x = time, y = smoothed_humidity, colour = "Smoothed Humidity")) +
+  ylab("Relative Humidity %") +
+  ylim(60, 65) +
   xlab("Time(s)")
 
 hum_plot

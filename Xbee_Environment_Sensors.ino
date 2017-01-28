@@ -24,12 +24,15 @@ Hardware Hookup:
 #include <SoftwareSerial.h>
 SoftwareSerial XBee(2, 3); //RX, TX
 
-const int numReadings = 10; // size of the array
+const int numReadings = 20; // size of the array
 
 float readings[numReadings];  // the readings from analog input
+float readingsH[numReadings];
 int readIndex = 0;          // the index of the current reading
 float total = 0;              // the running total
+float totalH = 0;
 float average = 0;            // the average
+float averageH = 0;
 const int supplyVoltage = 5;
  
 
@@ -61,10 +64,20 @@ void loop() {
   
   // subtract the last reading:
   total = total - readings[readIndex];
+  totalH = totalH - readingsH[readIndex];
   // read from the sensor:
   readings[readIndex] = ((voltageT - 0.5) * 100.0) - 5;
+  //readingsH[readIndex] = (161.0 * voltageH / supplyVoltage - 25.8) / (1.0546 - (0.0026 * (((voltageT - 0.5) * 100.0)-5)));
+  
+  degreesC = ((voltageT - 0.5) * 100.0)-5;
+  sensorRH = 161.0 * voltageH / supplyVoltage - 25.8;
+  trueRH = sensorRH / (1.0546 - (0.0026 * degreesC)); //temperature adjustment
+  
+  readingsH[readIndex] = sensorRH / (1.0546 - (0.0026 * degreesC));
+  
   // add the reading to the total:
   total = total + readings[readIndex];
+  totalH = totalH + readingsH[readIndex];
   // advance to the next position in the array:
   readIndex = readIndex + 1;
 
@@ -76,19 +89,22 @@ void loop() {
 
   // calculate the average:
   average = total / numReadings; //smoothed T data
+  averageH = totalH / numReadings; //smoothed Humidity data
   
   // Calculate temperature
 
-   degreesC = ((voltageT - 0.5) * 100.0)-5;
-   
+//   degreesC = ((voltageT - 0.5) * 100.0)-5;
+
+  // trueRH = (161.0 * voltageH / supplyVoltage - 25.8) / (1.0546 - (0.0026 * (((voltageT - 0.5) * 100.0)-5)));
   
   // Calculate Humidity
-   sensorRH = 161.0 * voltageH / supplyVoltage - 25.8;
-   trueRH = sensorRH / (1.0546 - (0.0026 * degreesC)); //temperature adjustment
+  // sensorRH = 161.0 * voltageH / supplyVoltage - 25.8;
+   //trueRH = sensorRH / (1.0546 - (0.0026 * degreesC)); //temperature adjustment
    TdewPoint = (degreesC) - ((100 - trueRH)/5);
    CloudBase = ((((degreesC - TdewPoint) / 4.5) * 1000) + 50);
   // print out the value you read:
-  Serial.println(readings[readIndex]);
+  //Serial.println(
+  Serial.println(readingsH[readIndex]);
   XBee.print(voltageT);
   XBee.print(" ");
   XBee.print(degreesC);
@@ -100,6 +116,8 @@ void loop() {
   XBee.print(sensorRH);
   XBee.print(" ");
   XBee.print(trueRH);
+  XBee.print(" ");
+  XBee.print(averageH);
   XBee.print(" ");
   XBee.print(TdewPoint);
   XBee.print(" ");
