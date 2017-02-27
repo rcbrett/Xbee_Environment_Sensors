@@ -34,21 +34,14 @@ float totalH = 0;
 float average = 0;            // the average
 float averageH = 0;
 const int supplyVoltage = 5;
-const int sensorPin = 0;
-const int ledPin = 10;
-
-// set global variables for the light level:
-
+const int photoPin = 0;
 float lightLevel, high = 0, low = 1023;
-const int voltpin = 0;
- 
 
 // the setup routine runs once when you press reset:
 void setup() {
   // setup both ports at 9600 bits per second:
   Serial.begin(9600);
   XBee.begin(9600);
-  pinMode(ledPin, OUTPUT);
   for (int thisReading = 0; thisReading < numReadings; thisReading++){
     readings[thisReading] = 0;
   }
@@ -62,11 +55,10 @@ void loop() {
   float degreesC, sensorRH, trueRH, TdewPoint, CloudBase;
 
  // Photoresistor
- lightLevel = analogRead(sensorPin);
- Serial.println(4.65*lightLevel/1023);
-  manualTune();  // manually change the range from light to dark
-  //autoTune();  // have the Arduino do the work for us!
-  analogWrite(ledPin, lightLevel);
+ lightLevel = analogRead(photoPin);
+ float Vout = 5*lightLevel/1024;
+int lux=(2500/Vout-500)/10; //https://arduinodiy.wordpress.com/2013/11/03/measuring-light-with-an-arduino/
+ 
 
   
   // Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 5V):
@@ -137,80 +129,13 @@ void loop() {
   XBee.print(TdewPoint);
   XBee.print(" ");
   XBee.print(CloudBase);
-  XBee.println(" ");
+  XBee.print(" ");
+  XBee.print(lightLevel);
+  XBee.print(" ");
+  XBee.print(Vout);
+  XBee.print(" ");
+  XBee.println(lux);
  // XBee.print(tstamp);
  // XBee.println(" ");
   delay(500);
 }
-
-void manualTune()
-{
-  // As we mentioned above, the light-sensing circuit we built
-  // won't have a range all the way from 0 to 1023. It will likely
-  // be more like 300 (dark) to 800 (light). If you run this sketch
-  // as-is, the LED won't fully turn off, even in the dark.
-  
-  // You can accommodate the reduced range by manually 
-  // tweaking the "from" range numbers in the map() function.
-  // Here we're using the full range of 0 to 1023.
-  // Try manually changing this to a smaller range (300 to 800
-  // is a good guess), and try it out again. If the LED doesn't
-  // go completely out, make the low number larger. If the LED
-  // is always too bright, make the high number smaller.
-
-  // Remember you're JUST changing the 0, 1023 in the line below!
-
-  lightLevel = map(lightLevel, 600, 800, 0, 255);
-  lightLevel = constrain(lightLevel, 0, 255);
-
-  // Now we'll return to the main loop(), and send lightLevel
-  // to the LED.
-} 
-
-
-void autoTune()
-{
-  // As we mentioned above, the light-sensing circuit we built
-  // won't have a range all the way from 0 to 1023. It will likely
-  // be more like 300 (dark) to 800 (light).
-  
-  // In the manualTune() function above, you need to repeatedly
-  // change the values and try the program again until it works.
-  // But why should you have to do that work? You've got a
-  // computer in your hands that can figure things out for itself!
-
-  // In this function, the Arduino will keep track of the highest
-  // and lowest values that we're reading from analogRead().
-
-  // If you look at the top of the sketch, you'll see that we've
-  // initialized "low" to be 1023. We'll save anything we read
-  // that's lower than that:
-  
-  if (lightLevel < low)
-  {
-    low = lightLevel;
-  }
-
-  // We also initialized "high" to be 0. We'll save anything
-  // we read that's higher than that:
-  
-  if (lightLevel > high)
-  {
-    high = lightLevel;
-  }
-  
-  // Once we have the highest and lowest values, we can stick them
-  // directly into the map() function. No manual tweaking needed!
-  
-  // One trick we'll do is to add a small offset to low and high,
-  // to ensure that the LED is fully-off and fully-on at the limits
-  // (otherwise it might flicker a little bit).
-  
-  lightLevel = map(lightLevel, low+30, high-30, 0, 255);
-  lightLevel = constrain(lightLevel, 0, 255);
-  
-  // Now we'll return to the main loop(), and send lightLevel
-  // to the LED.
-}
-
-
