@@ -1,17 +1,15 @@
-## Real Time Serial Read from Sensor
-# test
+## Read Envirnoment data from Serial Port and out put data to a csv
 
 library(tidyverse)
 library(grid)
 library(purrr)
-#arduino.data  = data.frame(read.csv("test.csv", header = FALSE, sep = ","))  # import diamond count data
 
 f <- file("/dev/cu.usbserial-DA01HLQC", open="r")
-data <- data.frame(scan(f, n=50, what = "double", allowEscapes = TRUE, sep = "\n"))
+data <- data.frame(scan(f, n=2, what = "double", allowEscapes = TRUE, sep = "\n"))
 close(f)
 
 colnames(data) <- "all_data"
-parsed_data <-  separate(data, all_data, 
+parsed_data <-  separate(data, all_data,
                             c("Temperature_C",
                              "Humidity_pct",
                              "Dew_Point_C",
@@ -21,17 +19,17 @@ parsed_data <-  separate(data, all_data,
                              "Pressure_sea_level_kPa",
                              "Altitude"),
                               sep = ",")
-                   
+
 # remove first row (sometimes has NAs and jumbled columns)
 parsed_data <- parsed_data[-1,]
-
+data <- data[-1,]
 # change all columns to numeric
 parsed_data <- map(parsed_data, as.numeric) %>% as.data.frame()
 
-means = data.frame(colMeans(parsed_data, na.rm = FALSE, dims = 1))
+#means = data.frame(colMeans(parsed_data, na.rm = FALSE, dims = 1))
 # plot(arduino.data$Temperature_C, arduino.data$Station_Pressure_kPa)
 
-write.table(means, "~/Documents/RCODE/SerialRead/Xbee_Environment_Sensors/means.csv", sep="\t")
+write.table(data, "~/Documents/RCODE/SerialRead/Xbee_Environment_Sensors/environmentData.txt", sep=" ", append = TRUE, col.names = FALSE)
 
 
 # jpeg('rplot.jpg')
