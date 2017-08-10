@@ -12,6 +12,8 @@ Hardware Hookup:
   sure the SWITCH IS IN THE "DLINE" POSITION. That will connect
   the XBee's DOUT and DIN pins to Arduino pins 2 and 3.
 
+smoothing algorithm adapted from https://www.arduino.cc/en/Tutorial/Smoothing
+
 *****************************************************************/
 // Libraries used:
 #include <SoftwareSerial.h> // The SoftwareSerial communicates with the XBee
@@ -32,7 +34,15 @@ SFE_BMP180 pressure;        //  create an SFE_BMP180 object, here called "pressu
 #define ALTITUDE 46         // Altitude at 3417 Welwyn St Van BC - need to have this up dated from a GPS
 
 const int supplyVoltage = 5;
-const int numReadings = 10;
+const int numReadings = 20; // number of readings to average measurements by
+
+float tempC_readings[numReadings];
+float humidity_readings[numReadings];
+int readIndex = 0;
+float totalTC = 0;
+float averageTC = 0;
+float totalH = 0;
+float averageH = 0;
 
 
 ///////////////Weather//////////////////////// 
@@ -48,6 +58,12 @@ void setup() {
   // setup both ports at 9600 bits per second:
   Serial.begin(9600);
   XBee.begin(9600);
+  for (int thisReading = 0; thisReading < numReadings; thisReading++) {
+    tempC_readings[thisReading] = 0;
+  }
+  for (int thisReading = 0; thisReading < numReadings; thisReading++) {
+    humidity_readings[thisReading] = 0;
+  }
   
   // Initialize the sensor (it is important to get calibration values stored on the device).
   if (pressure.begin())
@@ -71,14 +87,17 @@ void loop() {
 
   // Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 5V):
   // read the input on analog pin 0:
-  int sensorValueH = analogRead(A1); // Analouge pin 1 for humidity sensor
-  int sensorValueP = analogRead(A0); // Analouge pin 0 for photoresistor
- 
+int sensorValueH = analogRead(A1); // Analouge pin 1 for humidity sensor
+int sensorValueP = analogRead(A0); // Analouge pin 0 for photoresistor
+
+totalTC = totalTC - tempC_readings[readIndex];
+totalH = totalH - humidity_readings[readIndex];
+  
   voltageH = sensorValueH * (supplyVoltage / 1023.0); // Calculate Voltage at Humidity sensory  
   voltageP = sensorValueP * (supplyVoltage / 1023.0); // Calculate Voltage from photoresistor
 
   sensorRH = 161.0 * voltageH / supplyVoltage - 25.81; // https://learn.sparkfun.com/tutorials/hih-4030-humidity-sensor-hookup-guide
-  humidity = sensorRH / (1.0546 - (0.00216 * T)); //https://www.sparkfun.com/datasheets/Sensors/Weather/SEN-09569-HIH-4030-datasheet.pdf
+  humidity = sensorRH / (1.0546 - (0.00216 * averageTC)); //https://www.sparkfun.com/datasheets/Sensors/Weather/SEN-09569-HIH-4030-datasheet.pdf
   
   status = pressure.startTemperature();
   if (status != 0)
@@ -148,43 +167,66 @@ void loop() {
   
   //readingsH[readIndex] = sensorRH / (1.0546 - (0.0026 * degreesC));
 
-baromin = (p0*0.0295333727);
-tempf = (T * 9.0)/5.0 +32.0;
+tempC_readings[readIndex] = T;
+humidity_readings[readIndex] = humidity;
+totalTC = totalTC + tempC_readings[readIndex];
+totalH = totalH + humidity_readings[readIndex];
+readIndex = readIndex +1;
 
+if (readIndex >= numReadings) {
+    // ...wrap around to the beginning:
+    readIndex = 0;
+  }
+ 
+averageTC = totalTC / numReadings;
+averageH = totalH / numReadings;
+
+baromin = (p0*0.0295333727);
+tempf = (averageTC * 9.0)/5.0 +32.0;
+
+
+
+Serial.print(averageTC);
+Serial.print(" ");
+Serial.print(T);
+Serial.print(" ");
+Serial.print(averageH);
+Serial.print(" ");
+Serial.println(humidity);
 
 
   // Calculations of dew point and cloud base elevation (need to get references)
-  TdewPoint = (T) - ((100 - humidity)/5); //averageH is relative humidity average T in C
+  TdewPoint = (averageTC) - ((100 - averageH)/5); //averageH is relative humidity average T in C
   dewpointf = (TdewPoint * 9.0)/5.0 +32.0;
-  int CloudBase = ((((T - TdewPoint) / 2.5) * 1000)); // http://www.csgnetwork.com/estcloudbasecalc.html
+  int CloudBase = ((((averageTC - TdewPoint) / 2.5) * 1000)); // http://www.csgnetwork.com/estcloudbasecalc.html
 // feet above ground level
   
   // Calculate lux from photo-resistor voltage - equation is from website below
   int lux=(2500/voltageP-500)/10; //https://arduinodiy.wordpress.com/2013/11/03/measuring-light-with-an-arduino/
   
   // output to the serial port
-  Serial.print(T);
-  Serial.print(",");
-//  Serial.print(tempf);
+//  Serial.print(averageTC);
 //  Serial.print(",");
-  Serial.print(humidity);
-  Serial.print(",");
-  Serial.print(TdewPoint);
-  Serial.print(",");
-  Serial.print(dewpointf);
-  Serial.print(",");
-  Serial.print(CloudBase);
-  Serial.print(",");
-  Serial.print(lux);
-  Serial.print(",");
-  Serial.print(P*0.0295333727,2); // inHg
-  Serial.print(",");
-  Serial.print(P/10,3); // absolute pressure in kpa
-  Serial.print(",");
-  Serial.print(p0/10,3); // pressure at sea level
-  Serial.print(",");
-  Serial.println(ALTITUDE);
-// 
+////  Serial.print(tempf);
+////  Serial.print(",");
+//  Serial.print(humidity);
+//  Serial.print(",");
+//  Serial.print(TdewPoint);
+//  Serial.print(",");
+//  Serial.print(dewpointf);
+//  Serial.print(",");
+//  Serial.print(CloudBase);
+//  Serial.print(",");
+//  Serial.print(lux);
+//  Serial.print(",");
+//  Serial.print(P*0.0295333727,2); // inHg
+//  Serial.print(",");
+//  Serial.print(P/10,3); // absolute pressure in kpa
+//  Serial.print(",");
+//  Serial.print(p0/10,3); // pressure at sea level
+//  Serial.print(",");
+//  Serial.println(ALTITUDE);
+//// 
    
 // Send data to serial port to be read into R script 
      XBee.print(WEBPAGE); 
@@ -201,9 +243,9 @@ tempf = (T * 9.0)/5.0 +32.0;
      XBee.print("&dewptf=");
      XBee.print(dewpointf);
      XBee.print("&humidity=");
-     XBee.print(humidity);
+     XBee.print(averageH);
      XBee.println("&softwaretype=Arduino%20UNO%20version1&action=updateraw&realtime=1&rtfreq=30");   //Using Rapid Fire, sending data 1time every 30sec
    
-   delay(5000);  
+   delay(200);  
 }
 
