@@ -18,7 +18,12 @@ Hardware Hookup:
 #include <Wire.h>           // a standard library included with Arduino
 #include <SFE_BMP180.h>     // library required to run BMP180 Baro sensor
 #include <Adafruit_GPS.h> 
-//#include <Ethernet.h>
+#include <Ethernet.h>
+#include <SPI.h>
+#include <WiFi.h>
+WiFiClient client;
+
+
 
 SoftwareSerial XBee(2, 3);  //RX, TX - XBee's DOUT (TX) is connected to pin 2 (Arduino's Software RX), XBee's DIN (RX) is connected to pin 3 (Arduino's Software TX)
 //SoftwareSerial mySerial(3,2);
@@ -27,6 +32,16 @@ SFE_BMP180 pressure;        //  create an SFE_BMP180 object, here called "pressu
 #define ALTITUDE 46         // Altitude at 3417 Welwyn St Van BC - need to have this up dated from a GPS
 
 const int supplyVoltage = 5;
+const int numReadings = 10;
+
+
+///////////////Weather//////////////////////// 
+char server [] = "rtupdate.wunderground.com";
+//char server [] = "weatherstation.wunderground.com";  
+//char WEBPAGE [] = "GET /weatherstation/updateweatherstation.php";
+char WEBPAGE [] = "https://weatherstation.wunderground.com/weatherstation/updateweatherstation.php?";
+char ID [] = "IVANCOUV35";
+char PASSWORD [] = "mqj7772g";
 
 // the setup routine runs once when you press reset:
 void setup() {
@@ -44,12 +59,13 @@ void setup() {
     Serial.println("BMP180 init fail\n\n");
     while(1); // Pause forever.
   }
+
 }
   
 
 
 void loop() {
-  float voltageH, voltageP, sensorRH, humidity, TdewPoint, baromin, tempf;
+  float voltageH, voltageP, sensorRH, humidity, TdewPoint, baromin, tempf, dewpointf;
   char status;
   double T,P,p0,a;
 
@@ -127,16 +143,19 @@ void loop() {
   }
   else Serial.println("error starting temperature measurement\n");
 
-  delay(100);  // Pause for 5 seconds.
+  delay(1000);  // Pause for 5 seconds.
 
   
   //readingsH[readIndex] = sensorRH / (1.0546 - (0.0026 * degreesC));
 
 baromin = (p0*0.0295333727);
 tempf = (T * 9.0)/5.0 +32.0;
- 
+
+
+
   // Calculations of dew point and cloud base elevation (need to get references)
   TdewPoint = (T) - ((100 - humidity)/5); //averageH is relative humidity average T in C
+  dewpointf = (TdewPoint * 9.0)/5.0 +32.0;
   int CloudBase = ((((T - TdewPoint) / 2.5) * 1000)); // http://www.csgnetwork.com/estcloudbasecalc.html
 // feet above ground level
   
@@ -144,22 +163,47 @@ tempf = (T * 9.0)/5.0 +32.0;
   int lux=(2500/voltageP-500)/10; //https://arduinodiy.wordpress.com/2013/11/03/measuring-light-with-an-arduino/
   
   // output to the serial port
-  XBee.print(T);
-  XBee.print(",");
-  XBee.print(humidity);
-  XBee.print(",");
-  XBee.print(TdewPoint);
-  XBee.print(",");
-  XBee.print(CloudBase);
-  XBee.print(",");
-  XBee.print(lux);
-  XBee.print(",");
-  XBee.print(P/10,3); // absolute pressure in kpa
-  XBee.print(",");
-  XBee.print(p0/10,3); // pressure at sea level
-  XBee.print(",");
-  XBee.println(ALTITUDE);
+  Serial.print(T);
+  Serial.print(",");
+//  Serial.print(tempf);
+//  Serial.print(",");
+  Serial.print(humidity);
+  Serial.print(",");
+  Serial.print(TdewPoint);
+  Serial.print(",");
+  Serial.print(dewpointf);
+  Serial.print(",");
+  Serial.print(CloudBase);
+  Serial.print(",");
+  Serial.print(lux);
+  Serial.print(",");
+  Serial.print(P*0.0295333727,2); // inHg
+  Serial.print(",");
+  Serial.print(P/10,3); // absolute pressure in kpa
+  Serial.print(",");
+  Serial.print(p0/10,3); // pressure at sea level
+  Serial.print(",");
+  Serial.println(ALTITUDE);
+// 
+   
+// Send data to serial port to be read into R script 
+     XBee.print(WEBPAGE); 
+     XBee.print("ID=");
+     XBee.print(ID);
+     XBee.print("&PASSWORD=");
+     XBee.print(PASSWORD);
+     XBee.print("&dateutc=");
+     XBee.print("now");    
+     XBee.print("&tempf=");
+     XBee.print(tempf);
+     XBee.print("&baromin=");
+     XBee.print(p0*0.0295333727,2);
+     XBee.print("&dewptf=");
+     XBee.print(dewpointf);
+     XBee.print("&humidity=");
+     XBee.print(humidity);
+     XBee.println("&softwaretype=Arduino%20UNO%20version1&action=updateraw&realtime=1&rtfreq=30");   //Using Rapid Fire, sending data 1time every 30sec
+   
+   delay(5000);  
 }
-  
-
 
