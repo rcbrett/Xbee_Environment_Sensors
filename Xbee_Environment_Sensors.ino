@@ -34,7 +34,7 @@ SFE_BMP180 pressure;        //  create an SFE_BMP180 object, here called "pressu
 #define ALTITUDE 46         // Altitude at 3417 Welwyn St Van BC - need to have this up dated from a GPS
 
 const int supplyVoltage = 5;
-const int numReadings = 20; // number of readings to average measurements by
+const int numReadings = 30; // number of readings to average measurements by
 
 float tempC_readings[numReadings];
 float humidity_readings[numReadings];
@@ -186,47 +186,47 @@ tempf = (averageTC * 9.0)/5.0 +32.0;
 
 
 
-Serial.print(averageTC);
-Serial.print(" ");
-Serial.print(T);
-Serial.print(" ");
-Serial.print(averageH);
-Serial.print(" ");
-Serial.println(humidity);
+//Serial.print(averageTC);
+//Serial.print(" ");
+//Serial.print(T);
+//Serial.print(" ");
+//Serial.print(averageH);
+//Serial.print(" ");
+//Serial.println(humidity);
 
 
   // Calculations of dew point and cloud base elevation (need to get references)
-  TdewPoint = (averageTC) - ((100 - averageH)/5); //averageH is relative humidity average T in C
+  TdewPoint = ((averageTC) - ((100 - averageH)/5)); //averageH is relative humidity average T in C
+  
   dewpointf = (TdewPoint * 9.0)/5.0 +32.0;
-  int CloudBase = ((((averageTC - TdewPoint) / 2.5) * 1000)); // http://www.csgnetwork.com/estcloudbasecalc.html
+  int CloudBase = ((((T - ((T) - ((100 - humidity)/5))) / 2.5) * 1000)); // http://www.csgnetwork.com/estcloudbasecalc.html
 // feet above ground level
   
   // Calculate lux from photo-resistor voltage - equation is from website below
   int lux=(2500/voltageP-500)/10; //https://arduinodiy.wordpress.com/2013/11/03/measuring-light-with-an-arduino/
   
   // output to the serial port
-//  Serial.print(averageTC);
-//  Serial.print(",");
-////  Serial.print(tempf);
-////  Serial.print(",");
-//  Serial.print(humidity);
-//  Serial.print(",");
-//  Serial.print(TdewPoint);
-//  Serial.print(",");
-//  Serial.print(dewpointf);
-//  Serial.print(",");
-//  Serial.print(CloudBase);
-//  Serial.print(",");
-//  Serial.print(lux);
-//  Serial.print(",");
-//  Serial.print(P*0.0295333727,2); // inHg
-//  Serial.print(",");
-//  Serial.print(P/10,3); // absolute pressure in kpa
-//  Serial.print(",");
-//  Serial.print(p0/10,3); // pressure at sea level
-//  Serial.print(",");
-//  Serial.println(ALTITUDE);
-//// 
+  Serial.print("Temperature degC: ");
+  Serial.println(T);
+  Serial.print("humidity: ");
+  Serial.print(humidity);
+  Serial.println("%");
+  Serial.print("Dew Point degC: ");
+  Serial.println((T) - ((100 - humidity)/5));
+  Serial.print("Base of clouds (ft agl): ");
+  Serial.println(CloudBase);
+  Serial.print("Lux ");
+  Serial.println(lux);
+  Serial.print("Pressure (kPa) ");
+  //Serial.print(P*0.0295333727,2); // inHg
+ // Serial.print(",");
+ // Serial.print(P/10,3); // absolute pressure in kpa
+  //Serial.print(",");
+  Serial.println(p0/10,3); // pressure at sea level
+  Serial.print("Current Altitude: ");
+  Serial.println(ALTITUDE);
+  Serial.println(" ");
+// 
    
 // Send data to serial port to be read into R script 
      XBee.print(WEBPAGE); 
@@ -248,4 +248,5 @@ Serial.println(humidity);
    
    delay(200);  
 }
+
 
